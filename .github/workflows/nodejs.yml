@@ -1,0 +1,64 @@
+name: nodejs
+on:
+  push:
+
+defaults:
+  run:
+    shell: bash
+      
+env:
+  CI: true
+  FORCE_COLOR: 2
+
+
+jobs:
+  pipeline:
+    name: Node ${{ matrix.node }} on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+   
+    strategy:
+      fail-fast: false
+      matrix:
+        node: ['14.x']
+        os: ['ubuntu-latest']
+
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        ref: ${{ github.ref }}
+
+    - name: debug
+      if: contains(github.event.pull_request.labels.*.name, 'debug')
+      env:
+          GITHUB_CONTEXT: ${{ toJson(github) }}
+      run: |
+        env
+        echo "$GITHUB_CONTEXT"
+        
+    - name: Use Node.js 14 LTS
+      uses: actions/setup-node@v2
+      with:
+        node-version: '14'
+
+    - name: Get yarn cache directory path
+      id: yarn-cache-dir-path
+      run: echo "::set-output name=dir::$(yarn config get cacheFolder)"
+
+    - uses: actions/cache@v2
+      id: yarn-cache
+      with:
+        path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
+        key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-yarn-
+
+    - name: Installing dependencies
+      run: yarn install --frozen-lockfile
+
+    - name: yarn test:coverage
+      run: yarn test:coverage
+
+    - name: Coveralls
+      uses: coverallsapp/github-action@master
+      with:
+        github-token: ${{ secrets.github_token }}

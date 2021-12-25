@@ -49,6 +49,6 @@ export const duration = {
     return BigNumber.from(val).mul(this.days("7"))
   },
   years: function (val) {
-    return BigNumber.from(val).mul(this.days("365"))
+    return BigNumber.from(val).mul(this.days("365.2425"))
   },
 }
